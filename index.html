@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube — Verified Family Consent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     BASE / RESET
+  ============================================================ */
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: #0F0F0F;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px 12px; color: #fff;
+  }
+
+  /* ============================================================
+     PHONE FRAME
+  ============================================================ */
+  .phone {
+    width: 390px; height: 844px; max-height: 96vh;
+    background: #0F0F0F; border-radius: 40px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.6), 0 0 0 10px #1c1c1c, 0 0 0 11px #000;
+    overflow: hidden; position: relative; display: flex; flex-direction: column;
+  }
+  /* notch */
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 150px; height: 26px; background: #000;
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 200;
+  }
+
+  /* ============================================================
+     YOUTUBE — TOP BAR
+  ============================================================ */
+  .yt-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 30px 14px 8px; flex-shrink: 0;
+  }
+  .yt-logo { display: flex; align-items: center; gap: 3px; }
+  .yt-logo .play {
+    width: 27px; height: 19px; background: #FF0000; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .yt-logo .play::after {
+    content: ''; border-left: 8px solid #fff;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px;
+  }
+  .yt-logo .word { font-weight: 700; font-size: 19px; letter-spacing: -1.2px; }
+  .yt-logo .sup { font-size: 8px; color: #aaa; align-self: flex-start; margin-top: 4px; }
+  .topbar-actions { display: flex; align-items: center; gap: 20px; }
+  .topbar-actions svg { display: block; cursor: pointer; }
+  .avatar-circle {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg,#00C6FF,#0072FF);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  /* verified chip in top bar (appears after success) */
+  .verified-chip {
+    display: none; align-items: center; gap: 4px;
+    background: rgba(46,158,106,.18); border: 1px solid rgba(46,158,106,.5);
+    color: #5FD69A; font-size: 10.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .verified-chip.show { display: inline-flex; }
+
+  /* ============================================================
+     CHIP ROW
+  ============================================================ */
+  .chip-row {
+    display: flex; gap: 8px; padding: 8px 14px 10px; overflow-x: auto; flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip {
+    background: #272727; color: #fff; font-size: 13px; font-weight: 500;
+    padding: 7px 12px; border-radius: 8px; white-space: nowrap; cursor: pointer;
+  }
+  .chip.active { background: #fff; color: #0F0F0F; }
+
+  /* ============================================================
+     HOME FEED
+  ============================================================ */
+  .feed {
+    flex: 1; overflow-y: auto; padding-bottom: 70px;
+    scrollbar-width: none;
+  }
+  .feed::-webkit-scrollbar { display: none; }
+
+  /* amber pending banner (step 3) */
+  .pending-banner {
+    display: none; align-items: center; gap: 9px;
+    background: rgba(235,170,60,.14); border-bottom: 1px solid rgba(235,170,60,.35);
+    color: #F0C46A; font-size: 12.5px; font-weight: 500;
+    padding: 11px 14px; position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(6px);
+  }
+  .pending-banner.show { display: flex; }
+
+  .video-card { margin-bottom: 14px; }
+  .thumb {
+    width: 100%; aspect-ratio: 16/9; position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .thumb .duration {
+    position: absolute; bottom: 8px; right: 8px;
+    background: rgba(0,0,0,.8); color: #fff; font-size: 11px; font-weight: 500;
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .thumb .watermark {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 3px 7px; border-radius: 4px; display: flex; align-items: center; gap: 4px;
+  }
+  .thumb .watermark::before {
+    content: 'V'; display: inline-flex; align-items: center; justify-content: center;
+    width: 13px; height: 13px; background: #FF0000; border-radius: 50%;
+    font-size: 9px; font-weight: 900;
+  }
+  .thumb .play-overlay {
+    width: 46px; height: 46px; border-radius: 50%; background: rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-meta { display: flex; gap: 11px; padding: 11px 12px 0; }
+  .ch-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: #FF0000;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 16px; flex-shrink: 0;
+  }
+  .card-text { flex: 1; min-width: 0; }
+  .card-title { font-size: 14px; font-weight: 500; line-height: 1.35; color: #fff; }
+  .card-sub { font-size: 12px; color: #aaa; margin-top: 3px; }
+  .menu-dot { color: #fff; cursor: pointer; padding: 2px; flex-shrink: 0; }
+
+  /* ============================================================
+     BOTTOM NAV
+  ============================================================ */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 58px; background: #0F0F0F; border-top: 1px solid #272727;
+    display: flex; align-items: center; justify-content: space-around;
+    padding-bottom: 4px; z-index: 100;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: #aaa; font-size: 10px; cursor: pointer; flex: 1;
+  }
+  .nav-item.active { color: #fff; font-weight: 500; }
+  .nav-item svg { display: block; }
+  .nav-create svg { width: 38px; height: 38px; }
+
+  /* ============================================================
+     OVERLAY SYSTEM (consent flow)
+  ============================================================ */
+  .backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,.65);
+    z-index: 150; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .backdrop.show { opacity: 1; pointer-events: auto; }
+
+  .overlay {
+    position: absolute; z-index: 160;
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+  }
+  .overlay.active { opacity: 1; pointer-events: auto; }
+
+  /* centered modal variant */
+  .modal {
+    top: 50%; left: 50%; width: 330px;
+    transform: translate(-50%, -46%) scale(.96);
+    background: #212121; border-radius: 16px; padding: 24px 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  .modal.active { transform: translate(-50%, -50%) scale(1); }
+
+  /* full modal (takes most of frame) */
+  .full-modal {
+    top: 16px; left: 12px; right: 12px; bottom: 16px;
+    transform: translateY(20px);
+    background: #181818; border-radius: 18px; padding: 22px 20px;
+    display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none;
+  }
+  .full-modal::-webkit-scrollbar { display: none; }
+  .full-modal.active { transform: translateY(0); }
+
+  /* bottom sheet variant */
+  .sheet {
+    left: 0; right: 0; bottom: 0;
+    transform: translateY(100%);
+    background: #212121; border-radius: 20px 20px 0 0;
+    padding: 22px 20px 28px;
+    max-height: 90%; overflow-y: auto; scrollbar-width: none;
+  }
+  .sheet::-webkit-scrollbar { display: none; }
+  .sheet.active { transform: translateY(0); }
+  .sheet-handle {
+    width: 38px; height: 4px; border-radius: 2px; background: #555;
+    margin: -8px auto 16px;
+  }
+
+  /* ============================================================
+     TYPE + BUTTONS (consent flow)
+  ============================================================ */
+  h2 { font-size: 21px; font-weight: 700; line-height: 1.25; margin-bottom: 10px; }
+  .body { font-size: 14px; line-height: 1.55; color: #ccc; }
+  .cap { font-size: 12px; color: #999; line-height: 1.5; }
+  .flex-spacer { flex: 1; min-height: 12px; }
+
+  .btn {
+    width: 100%; min-height: 50px; border-radius: 999px; border: none;
+    font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform .1s, filter .15s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: #0E9C8B; color: #fff; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-secondary { background: transparent; color: #0E9C8B; border: 1.5px solid #0E9C8B; }
+  .btn-secondary:hover { background: rgba(14,156,139,.08); }
+  .btn-danger { background: #E1483E; color: #fff; }
+  .btn-danger:hover { filter: brightness(1.08); }
+  .btn-white { background: #fff; color: #0F0F0F; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+  .link {
+    background: none; border: none; font-family: inherit;
+    color: #0E9C8B; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 12px; width: 100%; text-align: center;
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; width: fit-content;
+  }
+  .pill-red { background: rgba(225,72,62,.16); color: #FF7A70; border: 1px solid rgba(225,72,62,.4); }
+
+  /* date selectors */
+  .date-row { display: flex; gap: 10px; margin: 18px 0 12px; }
+  .date-row select {
+    flex: 1; min-height: 50px; background: #2b2b2b; color: #fff;
+    border: 1px solid #3d3d3d; border-radius: 10px; padding: 0 14px;
+    font-family: inherit; font-size: 15px; font-weight: 500; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%23999' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+
+  /* inline expandable note */
+  .note {
+    display: none; margin-top: 12px; background: #2b2b2b; border-left: 3px solid #0E9C8B;
+    border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #ccc; line-height: 1.55;
+  }
+  .note.open { display: block; }
+
+  /* invite option cards */
+  .opt {
+    background: #2b2b2b; border: 1.5px solid #3d3d3d; border-radius: 12px;
+    padding: 15px; margin-bottom: 11px; cursor: pointer; transition: border-color .15s;
+  }
+  .opt.sel { border-color: #0E9C8B; }
+  .opt h3 { font-size: 14px; font-weight: 700; margin-bottom: 9px; display: flex; align-items: center; gap: 8px; }
+  .opt input {
+    width: 100%; min-height: 44px; background: #181818; color: #fff;
+    border: 1px solid #3d3d3d; border-radius: 9px; padding: 0 12px;
+    font-family: inherit; font-size: 14px;
+  }
+  .qr-wrap { display: flex; justify-content: center; padding: 2px 0; }
+
+  /* spinner + verify */
+  .spinner {
+    width: 44px; height: 44px; border: 4px solid rgba(14,156,139,.22);
+    border-top-color: #0E9C8B; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .verify-loading.hide { display: none; }
+  .verify-done { display: none; text-align: center; }
+  .verify-done.show { display: block; animation: pop .35s ease; }
+  @keyframes pop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .check-badge {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(46,158,106,.15); border: 2px solid #2E9E6A;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+  }
+  .privacy-note {
+    background: rgba(14,156,139,.1); border: 1px solid rgba(14,156,139,.35); border-radius: 12px;
+    padding: 14px; font-size: 13.5px; font-weight: 600; color: #7FD6CB; line-height: 1.5;
+    display: flex; gap: 10px; align-items: flex-start; margin: 16px 0;
+  }
+  .phone-label {
+    text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: #999; background: #2b2b2b; padding: 6px 14px; border-radius: 999px;
+    width: fit-content; margin: 0 auto 18px;
+  }
+
+  /* language toggle */
+  .lang-row { display: flex; gap: 8px; margin-bottom: 18px; }
+  .lang-row button {
+    flex: 1; padding: 9px 0; border-radius: 999px; background: transparent;
+    border: 1px solid #3d3d3d; color: #999; font-family: inherit; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: all .15s;
+  }
+  .lang-row button.sel { background: #0E9C8B; border-color: #0E9C8B; color: #fff; }
+
+  /* consent items */
+  .citem {
+    display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+    background: #2b2b2b; border-radius: 12px; margin-bottom: 8px; font-size: 14px; font-weight: 500;
+  }
+  .citem .grow { flex: 1; line-height: 1.35; }
+  .badge { font-size: 11px; font-weight: 800; letter-spacing: .5px; padding: 3px 10px; border-radius: 999px; }
+  .badge-on { background: rgba(46,158,106,.18); color: #5FD69A; border: 1px solid rgba(46,158,106,.5); }
+  .badge-off { background: rgba(225,72,62,.14); color: #FF8B82; border: 1px solid rgba(225,72,62,.45); }
+  .glabel { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #999; text-transform: uppercase; margin: 14px 0 8px; }
+
+  /* success big check */
+  .big-check { width: 92px; height: 92px; margin: 4px auto 18px; }
+  .big-check circle {
+    stroke: #2E9E6A; stroke-width: 4; fill: rgba(46,158,106,.1);
+    stroke-dasharray: 290; stroke-dashoffset: 290; animation: draw-c .6s ease forwards;
+  }
+  .big-check path {
+    stroke: #2E9E6A; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw-k .4s ease .5s forwards;
+  }
+  @keyframes draw-c { to { stroke-dashoffset: 0; } }
+  @keyframes draw-k { to { stroke-dashoffset: 0; } }
+  .sline { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #ccc; line-height: 1.5; margin-bottom: 10px; text-align: left; }
+
+  /* dashboard */
+  .status-card { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; background: #2b2b2b; border-radius: 12px; padding: 14px; }
+  .dash-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg,#6C5CE7,#a55eea);
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; flex-shrink: 0;
+  }
+  .green-dot { width: 9px; height: 9px; border-radius: 50%; background: #2E9E6A; display: inline-block; margin-right: 6px; }
+  .approved { background: #2b2b2b; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .approved .row { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .approved .row:last-child { border-bottom: none; }
+  .drow {
+    display: flex; align-items: center; gap: 12px; background: #2b2b2b; border-radius: 12px;
+    padding: 15px 14px; margin-bottom: 8px; font-size: 14.5px; font-weight: 500; cursor: pointer;
+    border: none; width: 100%; color: #fff; font-family: inherit; text-align: left; transition: background .15s;
+  }
+  .drow:hover { background: #333; }
+  .drow.danger { color: #FF8B82; }
+  .drow .grow { flex: 1; }
+  .chev { color: #999; }
+
+  /* floating action buttons */
+  .fab {
+    position: absolute; z-index: 90; border: none; cursor: pointer;
+    font-family: inherit; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    transition: transform .1s, filter .15s;
+  }
+  .fab:active { transform: scale(.96); }
+  .fab-invite {
+    display: none; bottom: 74px; right: 14px;
+    background: #0E9C8B; color: #fff; font-size: 14px;
+    padding: 13px 20px; border-radius: 999px; align-items: center; gap: 7px;
+  }
+  .fab-invite.show { display: inline-flex; }
+  .fab-family {
+    display: none; bottom: 74px; right: 14px;
+    background: #212121; border: 1px solid #3d3d3d; color: #fff; font-size: 13px;
+    padding: 12px 16px; border-radius: 999px; align-items: center; gap: 7px;
+  }
+  .fab-family.show { display: inline-flex; }
+
+  /* toast */
+  .toast {
+    position: absolute; bottom: 78px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: #313131; color: #fff; font-size: 13px; font-weight: 500;
+    padding: 11px 18px; border-radius: 8px; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: all .25s; z-index: 300;
+    box-shadow: 0 6px 20px rgba(0,0,0,.5);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+
+  <!-- ================= YOUTUBE HOME (always present behind overlays) ================= -->
+
+  <!-- Top bar -->
+  <div class="yt-topbar">
+    <div class="yt-logo">
+      <div class="play"></div>
+      <span class="word">YouTube</span>
+      <span class="sup">IN</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="verified-chip" id="verifiedChip">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="m5 13 4 4L19 7" stroke="#5FD69A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Family-verified
+      </span>
+      <!-- cast -->
+      <svg onclick="toast('Not part of this demo')" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="19" r="1.4" fill="#fff"/></svg>
+      <!-- bell -->
+      <svg onclick="toast('Not part of this demo')" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9Zm-4.3 12a2 2 0 0 1-3.4 0" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <!-- search -->
+      <svg onclick="toast('Not part of this demo')" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      <div class="avatar-circle" onclick="toast('Not part of this demo')">N</div>
+    </div>
+  </div>
+
+  <!-- Chip row -->
+  <div class="chip-row">
+    <div class="chip active" onclick="toast('Not part of this demo')">All</div>
+    <div class="chip active" onclick="toast('Not part of this demo')" style="background:#fff;color:#0F0F0F">Study</div>
+    <div class="chip" onclick="toast('Not part of this demo')">Physics</div>
+    <div class="chip" onclick="toast('Not part of this demo')">Live</div>
+    <div class="chip" onclick="toast('Not part of this demo')">Music</div>
+    <div class="chip" onclick="toast('Not part of this demo')">Mixes</div>
+  </div>
+
+  <!-- Feed -->
+  <div class="feed" id="feed">
+    <!-- amber pending banner (step 3) -->
+    <div class="pending-banner" id="pendingBanner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      Setup pending — enjoy these study picks while we wait.
+    </div>
+    <!-- video cards injected by JS -->
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 3 4 9.4V21h5v-6h6v6h5V9.4L12 3Z"/></svg>
+      Home
+    </div>
+    <div class="nav-item" onclick="toast('Not part of this demo')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m10 8 6 4-6 4V8Z" fill="#aaa"/><rect x="4" y="3" width="16" height="18" rx="5" stroke="#aaa" stroke-width="2"/></svg>
+      Shorts
+    </div>
+    <div class="nav-item nav-create" onclick="toast('Not part of this demo')">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="#aaa" stroke-width="1.6"/><path d="M12 7v10M7 12h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="nav-item" onclick="toast('Not part of this demo')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 8h16M6 12h12M4 16h16v-8H4z" stroke="#aaa" stroke-width="2" stroke-linejoin="round"/><path d="m11 11 3 1.5-3 1.5z" fill="#aaa"/></svg>
+      Subscriptions
+    </div>
+    <div class="nav-item" onclick="toast('Not part of this demo')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#aaa" stroke-width="2"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" stroke="#aaa" stroke-width="2" stroke-linecap="round"/></svg>
+      You
+    </div>
+  </div>
+
+  <!-- Floating buttons -->
+  <button class="fab fab-invite" id="fabInvite" onclick="openStep(4)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="#fff" stroke-width="2"/><path d="M19 8v6M22 11h-6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    Invite parent
+  </button>
+  <button class="fab fab-family" id="fabFamily" onclick="openStep(8)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" stroke="#0E9C8B" stroke-width="2" stroke-linejoin="round"/></svg>
+    Family Controls
+  </button>
+
+  <!-- ================= CONSENT FLOW OVERLAYS ================= -->
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- STEP 1: Age Gate (centered modal) -->
+  <div class="overlay modal" id="step1" style="text-align:center">
+    <div class="yt-logo" style="justify-content:center;margin-bottom:18px">
+      <div class="play"></div><span class="word">YouTube</span>
+    </div>
+    <h2>When's your birthday?</h2>
+    <div class="date-row">
+      <select id="dobMonth">
+        <option>January</option><option>February</option><option selected>March</option><option>April</option>
+        <option>May</option><option>June</option><option>July</option><option>August</option>
+        <option>September</option><option>October</option><option>November</option><option>December</option>
+      </select>
+      <select id="dobYear">
+        <option>2013</option><option selected>2011</option><option>2009</option><option>2007</option>
+        <option>2005</option><option>2000</option><option>1995</option>
+      </select>
+    </div>
+    <p class="cap">We ask to keep your experience age-appropriate.</p>
+    <button class="btn btn-primary" style="margin-top:20px" onclick="checkAge()">Continue</button>
+  </div>
+
+  <!-- STEP 2: Under-18 (bottom sheet) -->
+  <div class="overlay sheet" id="step2">
+    <div class="sheet-handle"></div>
+    <div class="pill pill-red" style="margin-bottom:14px">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      Under 18
+    </div>
+    <h2>Let's set this up with a parent</h2>
+    <p class="body">In India, a parent sets up accounts for under-18s. It takes about a minute — and you can keep watching while you wait.</p>
+    <div class="note" id="whyNote">India's DPDP Act requires verifiable parental consent before a service processes a child's data. This one-time setup is a safeguard for your privacy — not a lockout.</div>
+    <button class="btn btn-primary" style="margin-top:20px" onclick="openStep(3)">Get a parent's OK</button>
+    <button class="link" onclick="document.getElementById('whyNote').classList.toggle('open')">Why?</button>
+  </div>
+
+  <!-- STEP 4: Invite Parent (bottom sheet) -->
+  <div class="overlay sheet" id="step4">
+    <div class="sheet-handle"></div>
+    <h2>Invite a parent</h2>
+    <div style="margin-top:14px">
+      <div class="opt sel" onclick="selOpt(this)">
+        <h3>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" stroke="#0E9C8B" stroke-width="2"/><path d="m3 7 9 6 9-6" stroke="#0E9C8B" stroke-width="2" stroke-linecap="round"/></svg>
+          Send secure link
+        </h3>
+        <input type="email" value="mom@email.com" aria-label="Parent email">
+      </div>
+      <div class="opt" onclick="selOpt(this)">
+        <h3>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="#0E9C8B" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="#0E9C8B" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="#0E9C8B" stroke-width="2"/><path d="M14 14h3v3h-3zm4 4h3v3h-3z" fill="#0E9C8B"/></svg>
+          Parent is here — scan QR
+        </h3>
+        <div class="qr-wrap">
+          <svg width="88" height="88" viewBox="0 0 92 92" style="background:#fff;border-radius:8px;padding:6px">
+            <g fill="#0F0F0F">
+              <rect x="6" y="6" width="22" height="22"/><rect x="10" y="10" width="14" height="14" fill="#fff"/><rect x="13" y="13" width="8" height="8"/>
+              <rect x="64" y="6" width="22" height="22"/><rect x="68" y="10" width="14" height="14" fill="#fff"/><rect x="71" y="13" width="8" height="8"/>
+              <rect x="6" y="64" width="22" height="22"/><rect x="10" y="68" width="14" height="14" fill="#fff"/><rect x="13" y="71" width="8" height="8"/>
+              <rect x="36" y="8" width="6" height="6"/><rect x="46" y="14" width="6" height="6"/><rect x="36" y="22" width="6" height="6"/><rect x="52" y="8" width="6" height="6"/>
+              <rect x="8" y="36" width="6" height="6"/><rect x="18" y="42" width="6" height="6"/><rect x="30" y="36" width="6" height="6"/><rect x="40" y="44" width="6" height="6"/>
+              <rect x="50" y="36" width="6" height="6"/><rect x="60" y="44" width="6" height="6"/><rect x="72" y="38" width="6" height="6"/><rect x="80" y="48" width="6" height="6"/>
+              <rect x="36" y="56" width="6" height="6"/><rect x="46" y="62" width="6" height="6"/><rect x="56" y="56" width="6" height="6"/><rect x="66" y="66" width="6" height="6"/>
+              <rect x="38" y="74" width="6" height="6"/><rect x="50" y="80" width="6" height="6"/><rect x="62" y="76" width="6" height="6"/><rect x="76" y="80" width="6" height="6"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <p class="cap">We'll send a secure link. No documents needed.</p>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="openStep(5)">Send link</button>
+  </div>
+
+  <!-- STEP 5: DigiLocker (full modal) -->
+  <div class="overlay full-modal" id="step5">
+    <div class="phone-label">📱 On your parent's phone</div>
+    <h2 style="text-align:center">Verify with DigiLocker</h2>
+    <div class="flex-spacer"></div>
+    <div class="verify-loading" id="verifyLoading">
+      <div class="spinner"></div>
+      <p class="body" style="text-align:center">Verifying you're an adult…</p>
+    </div>
+    <div class="verify-done" id="verifyDone">
+      <div class="check-badge">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="m5 13 4 4L19 7" stroke="#2E9E6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <p style="font-size:17px;font-weight:700;color:#5FD69A">Verified: 18+</p>
+    </div>
+    <div class="privacy-note">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:1px"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" stroke="#0E9C8B" stroke-width="2" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="#0E9C8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Secure. We only learn you're 18+ — never your ID number.
+    </div>
+    <div class="flex-spacer"></div>
+    <button class="btn btn-primary" id="verifyContinue" style="visibility:hidden" onclick="openStep(6)">Continue</button>
+  </div>
+
+  <!-- STEP 6: Consent Notice (full modal) -->
+  <div class="overlay full-modal" id="step6">
+    <div class="lang-row">
+      <button class="sel" onclick="selLang(this)">English</button>
+      <button onclick="selLang(this)">हिंदी</button>
+      <button onclick="selLang(this)">தமிழ்</button>
+    </div>
+    <h2>Review what's being set up for Aryan</h2>
+    <div class="glabel">Turned on</div>
+    <div class="citem">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" stroke="#5FD69A" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span class="grow">Safe, curated study recommendations</span>
+      <span class="badge badge-on">ON</span>
+    </div>
+    <div class="glabel">Turned off — by default</div>
+    <div class="citem">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FF8B82" stroke-width="2"/><path d="m5.5 5.5 13 13" stroke="#FF8B82" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Activity tracking</span><span class="badge badge-off">OFF</span>
+    </div>
+    <div class="citem">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FF8B82" stroke-width="2"/><path d="m5.5 5.5 13 13" stroke="#FF8B82" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Behavioural profiling</span><span class="badge badge-off">OFF</span>
+    </div>
+    <div class="citem">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FF8B82" stroke-width="2"/><path d="m5.5 5.5 13 13" stroke="#FF8B82" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Targeted ads</span><span class="badge badge-off">OFF</span>
+    </div>
+    <div class="flex-spacer"></div>
+    <p class="cap" style="text-align:center;margin-bottom:12px">You can change or withdraw this anytime in Family Controls.</p>
+    <!-- equal-weight buttons: no dark patterns -->
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="openStep(7)">Not now</button>
+      <button class="btn btn-primary" onclick="openStep(7)">Allow &amp; finish</button>
+    </div>
+  </div>
+
+  <!-- STEP 7: Success (centered modal) -->
+  <div class="overlay modal" id="step7" style="text-align:center">
+    <svg class="big-check" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46"/><path d="M30 52 L44 66 L72 38"/>
+    </svg>
+    <h2>Aryan's account is family-verified ✓</h2>
+    <div style="margin-top:16px">
+      <div class="sline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:2px"><path d="m5 13 4 4L19 7" stroke="#2E9E6A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        You approved: safe study recommendations.
+      </div>
+      <div class="sline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="9" stroke="#E1483E" stroke-width="2"/><path d="m5.5 5.5 13 13" stroke="#E1483E" stroke-width="2" stroke-linecap="round"/></svg>
+        You blocked: tracking &amp; targeted ads.
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:20px" onclick="finishFlow()">Go to YouTube</button>
+  </div>
+
+  <!-- STEP 8: Parent Dashboard (bottom sheet) -->
+  <div class="overlay sheet" id="step8">
+    <div class="sheet-handle"></div>
+    <h2>Family Controls</h2>
+    <div class="status-card" style="margin-top:14px">
+      <div class="dash-avatar">A</div>
+      <div>
+        <div style="font-size:15px;font-weight:700">Aryan, 15</div>
+        <div style="font-size:12.5px;color:#5FD69A;font-weight:600;margin-top:2px"><span class="green-dot"></span>Family-verified</div>
+      </div>
+    </div>
+    <div class="approved">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:#999;text-transform:uppercase;margin-bottom:6px">What I approved</div>
+      <div class="row"><span>Safe study recommendations</span><span class="badge badge-on">ON</span></div>
+      <div class="row"><span>Activity tracking</span><span class="badge badge-off">OFF</span></div>
+      <div class="row"><span>Targeted ads</span><span class="badge badge-off">OFF</span></div>
+    </div>
+
+    <!-- DPDP data-rights center: access, correction, erasure, portability, grievance -->
+    <div class="glabel">Aryan's data rights · DPDP Act</div>
+    <button class="drow" onclick="openStep(10)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6M8 3h5l5 5v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="#0E9C8B" stroke-width="2" stroke-linejoin="round"/><path d="M13 3v5h5" stroke="#0E9C8B" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span class="grow">View consent record</span><span class="chev">›</span>
+    </button>
+    <button class="drow" onclick="toast('Preparing Aryan’s data export…')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v11m0 0 4-4m-4 4-4-4" stroke="#0E9C8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" stroke="#0E9C8B" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Access &amp; download data</span><span class="chev">›</span>
+    </button>
+    <button class="drow" onclick="toast('Edit request opened')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20h9" stroke="#0E9C8B" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="#0E9C8B" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span class="grow">Correct Aryan's details</span><span class="chev">›</span>
+    </button>
+    <button class="drow" onclick="toast('Deletion request submitted')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m3 0v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Delete Aryan's data</span><span class="chev">›</span>
+    </button>
+    <button class="drow" onclick="toast('Grievance routed to Data Protection Officer')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="#999" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Raise a grievance</span><span class="chev">›</span>
+    </button>
+
+    <div class="glabel">Consent</div>
+    <button class="drow danger" onclick="openStep(9)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 12H4m0 0 4-4m-4 4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 5V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="grow">Withdraw consent</span><span class="chev">›</span>
+    </button>
+  </div>
+
+  <!-- STEP 10: Consent Record (full modal) — DPDP consent artifact -->
+  <div class="overlay full-modal" id="step10">
+    <h2>Consent record</h2>
+    <p class="cap" style="margin-bottom:16px">A copy of exactly what you agreed to. Auditable, and revocable anytime.</p>
+
+    <div class="citem" style="flex-direction:column;align-items:stretch;gap:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between"><span style="color:#999">Child</span><span>Aryan · 15</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#999">Verified guardian</span><span style="color:#5FD69A">DigiLocker · 18+ ✓</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#999">Granted on</span><span>03 Jul 2026</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#999">Consent ID</span><span>VDN-CNS-4821-AR</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#999">Status</span><span style="color:#5FD69A">Active</span></div>
+    </div>
+
+    <div class="glabel">Purpose allowed</div>
+    <div class="citem"><span class="grow">Safe, curated study recommendations</span><span class="badge badge-on">ON</span></div>
+    <div class="glabel">Denied — data not processed for</div>
+    <div class="citem"><span class="grow">Activity tracking</span><span class="badge badge-off">OFF</span></div>
+    <div class="citem"><span class="grow">Behavioural profiling</span><span class="badge badge-off">OFF</span></div>
+    <div class="citem"><span class="grow">Targeted ads</span><span class="badge badge-off">OFF</span></div>
+
+    <div class="privacy-note" style="margin-top:16px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="#0E9C8B" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#0E9C8B" stroke-width="2" stroke-linecap="round"/></svg>
+      We ask you to re-confirm this consent every 12 months. Only the minimum data needed is ever stored.
+    </div>
+
+    <div class="flex-spacer"></div>
+    <button class="btn btn-primary" onclick="openStep(8)">Close</button>
+  </div>
+
+  <!-- STEP 9: Withdraw (centered modal) -->
+  <div class="overlay modal" id="step9" style="text-align:center">
+    <h2>Withdraw consent?</h2>
+    <p class="body">This is as easy as giving it. Data processing stops immediately and Aryan returns to a limited, curated experience.</p>
+    <button class="btn btn-danger" style="margin-top:20px" onclick="doWithdraw()">Withdraw</button>
+    <button class="btn btn-secondary" style="margin-top:10px" onclick="openStep(8)">Cancel</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  /* ============================================================
+     VEDANTU FEED — the only videos (curated child-safe result)
+  ============================================================ */
+  const VIDEOS = [
+    { title: "Newton's Laws Explained in 10 Minutes | Class 11 Physics", meta: "Vedantu · 1.2M views · 3 days ago", dur: "12:04", grad: "linear-gradient(135deg,#3D5AFE,#00B0FF)" },
+    { title: "Trigonometry Full Chapter Revision | Class 10 Maths", meta: "Vedantu · 842K views · 1 week ago", dur: "24:31", grad: "linear-gradient(135deg,#8E44AD,#E056A0)" },
+    { title: "Photosynthesis Made Easy | Class 10 Biology", meta: "Vedantu · 2.1M views · 5 days ago", dur: "09:47", grad: "linear-gradient(135deg,#11998e,#38ef7d)" },
+    { title: "Balancing Chemical Equations | Class 9 Chemistry", meta: "Vedantu · 654K views · 2 weeks ago", dur: "15:22", grad: "linear-gradient(135deg,#F7971E,#FFD200)" },
+    { title: "Quadratic Equations One-Shot | JEE Prep", meta: "Vedantu · 3.4M views · 1 month ago", dur: "41:10", grad: "linear-gradient(135deg,#e53935,#e35d5b)" },
+    { title: "English Grammar: Tenses in 15 Minutes", meta: "Vedantu · 978K views · 4 days ago", dur: "15:58", grad: "linear-gradient(135deg,#414345,#232526)" },
+  ];
+
+  // Build feed cards
+  const feed = document.getElementById('feed');
+  VIDEOS.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    card.innerHTML = `
+      <div class="thumb" style="background:${v.grad}">
+        <div class="watermark">Vedantu</div>
+        <div class="play-overlay">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="duration">${v.dur}</div>
+      </div>
+      <div class="card-meta">
+        <div class="ch-avatar">V</div>
+        <div class="card-text">
+          <div class="card-title">${v.title}</div>
+          <div class="card-sub">${v.meta}</div>
+        </div>
+        <div class="menu-dot">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+        </div>
+      </div>`;
+    // ⋮ menu = demo toast; whole card tap = demo toast (nothing playable)
+    card.querySelector('.menu-dot').onclick = (e) => { e.stopPropagation(); toast('Not part of this demo'); };
+    card.querySelector('.thumb').onclick = () => toast('Not part of this demo');
+    feed.appendChild(card);
+  });
+
+  /* ============================================================
+     OVERLAY / STEP NAVIGATION
+  ============================================================ */
+  const backdrop = document.getElementById('backdrop');
+  const overlayIds = [1,2,4,5,6,7,8,9,10]; // 3 has no overlay (it's the dismissed/free-scroll state)
+
+  function hideAllOverlays() {
+    overlayIds.forEach(i => document.getElementById('step'+i).classList.remove('active'));
+    backdrop.classList.remove('show');
+  }
+
+  // openStep shows the given overlay (or, for step 3, dismisses overlays and reveals the pending feed)
+  function openStep(n) {
+    hideAllOverlays();
+
+    if (n === 3) {
+      // Soft-pending: no modal — teen scrolls the real feed, banner + invite FAB visible
+      document.getElementById('pendingBanner').classList.add('show');
+      document.getElementById('fabInvite').classList.add('show');
+      return;
+    }
+
+    // Any other step is a real overlay: dim the feed behind
+    document.getElementById('fabInvite').classList.remove('show');
+    backdrop.classList.add('show');
+    document.getElementById('step'+n).classList.add('active');
+
+    if (n === 5) startVerification();     // DigiLocker spinner
+    if (n === 9) { /* nothing special */ }
+  }
+
+  /* ============================================================
+     STEP 1 — age gate: only under-18s enter the parental-consent flow
+  ============================================================ */
+  const TODAY_YEAR = 2026;                       // demo "today"
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  function checkAge() {
+    const year = parseInt(document.getElementById('dobYear').value, 10);
+    const bMonth = MONTHS.indexOf(document.getElementById('dobMonth').value); // 0-based
+    const nowMonth = 6; // July (0-based) — matches TODAY_YEAR
+    let age = TODAY_YEAR - year;
+    if (bMonth > nowMonth) age--;                // birthday not reached yet this year
+    if (age >= 18) adultBypass();                // 18+ → no parental consent needed
+    else openStep(2);                            // under 18 → start the family-consent flow
+  }
+  // Adult path: dismiss everything and drop straight into YouTube
+  function adultBypass() {
+    hideAllOverlays();
+    document.getElementById('pendingBanner').classList.remove('show');
+    document.getElementById('fabInvite').classList.remove('show');
+    document.getElementById('fabFamily').classList.remove('show');
+    document.getElementById('verifiedChip').classList.remove('show');
+    toast('You’re 18+ — no parental consent needed');
+  }
+
+  /* ============================================================
+     STEP 5 — fake DigiLocker verification
+  ============================================================ */
+  let verifyTimer;
+  function startVerification() {
+    clearTimeout(verifyTimer);
+    document.getElementById('verifyLoading').classList.remove('hide');
+    document.getElementById('verifyDone').classList.remove('show');
+    document.getElementById('verifyContinue').style.visibility = 'hidden';
+    verifyTimer = setTimeout(() => {
+      document.getElementById('verifyLoading').classList.add('hide');
+      document.getElementById('verifyDone').classList.add('show');
+      document.getElementById('verifyContinue').style.visibility = 'visible';
+    }, 1500);
+  }
+
+  /* ============================================================
+     STEP 7 — finish: clean verified state
+  ============================================================ */
+  function finishFlow() {
+    hideAllOverlays();
+    document.getElementById('pendingBanner').classList.remove('show'); // no longer pending
+    document.getElementById('verifiedChip').classList.add('show');     // top-bar verified chip
+    document.getElementById('fabInvite').classList.remove('show');
+    document.getElementById('fabFamily').classList.add('show');        // access dashboard
+    toast('You’re all set — enjoy YouTube');
+  }
+
+  /* ============================================================
+     STEP 9 — withdraw + restart
+  ============================================================ */
+  function doWithdraw() {
+    hideAllOverlays();
+    toast('Consent withdrawn. Aryan is now in curated mode.');
+    // reset UI back to a fresh state, then relaunch the flow
+    setTimeout(() => {
+      document.getElementById('verifiedChip').classList.remove('show');
+      document.getElementById('fabFamily').classList.remove('show');
+      openStep(1);
+    }, 1600);
+  }
+
+  /* ============================================================
+     SMALL INTERACTIONS
+  ============================================================ */
+  function selOpt(el) {
+    document.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  function selLang(btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  /* ============================================================
+     LAUNCH — flow starts automatically over the feed
+  ============================================================ */
+  openStep(1);
+</script>
+</body>
+</html>
